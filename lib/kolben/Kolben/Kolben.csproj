@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{ED665F9B-07F4-4415-BD72-A728CF1EA909}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Kolben</RootNamespace>
+    <AssemblyName>Kolben</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Adapters\CallbackType.cs" />
+    <Compile Include="Adapters\Delegates.cs" />
+    <Compile Include="Adapters\NetUndefined.cs" />
+    <Compile Include="Adapters\ReferenceAttribute.cs" />
+    <Compile Include="Adapters\ScriptContextManipulator.cs" />
+    <Compile Include="Adapters\ScriptFunctionAttribute.cs" />
+    <Compile Include="Adapters\ScriptFunctionType.cs" />
+    <Compile Include="Adapters\ScriptInAdapter.cs" />
+    <Compile Include="Adapters\ScriptMemberAttribute.cs" />
+    <Compile Include="Adapters\ScriptObjectLink.cs" />
+    <Compile Include="Adapters\ScriptOutAdapter.cs" />
+    <Compile Include="Adapters\ScriptPrototypeAttribute.cs" />
+    <Compile Include="Adapters\ScriptRuntimeException.cs" />
+    <Compile Include="Adapters\ScriptVariableAttribute.cs" />
+    <Compile Include="BuiltInMethodData.cs" />
+    <Compile Include="BuiltInMethodManager.cs" />
+    <Compile Include="ErrorHandler.cs" />
+    <Compile Include="ErrorType.cs" />
+    <Compile Include="GlobalFunctions.cs" />
+    <Compile Include="LeftToRightStringEscapeHelper.cs" />
+    <Compile Include="ObjectBuffer.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RightToLeftStringEscapeHelper.cs" />
+    <Compile Include="ScriptContext.cs" />
+    <Compile Include="ScriptException.cs" />
+    <Compile Include="ScriptProcessor.cs" />
+    <Compile Include="ScriptProcessorExecution.cs" />
+    <Compile Include="ScriptProcessorRegexCollection.cs" />
+    <Compile Include="ScriptStatement.cs" />
+    <Compile Include="StatementProcessor.cs" />
+    <Compile Include="StatementType.cs" />
+    <Compile Include="StringEscapeHelper.cs" />
+    <Compile Include="TypeContract.cs" />
+    <Compile Include="Types\Constants.cs" />
+    <Compile Include="Types\FunctionUsageType.cs" />
+    <Compile Include="Types\GlobalContextObject.cs" />
+    <Compile Include="Types\ObjectComparer.cs" />
+    <Compile Include="Types\ObjectOperators.cs" />
+    <Compile Include="Types\Prototypes\ArrayPrototype.cs" />
+    <Compile Include="Types\Prototypes\BooleanPrototype.cs" />
+    <Compile Include="Types\Prototypes\ErrorPrototype.cs" />
+    <Compile Include="Types\Prototypes\NumberPrototype.cs" />
+    <Compile Include="Types\Prototypes\ObjectPrototype.cs" />
+    <Compile Include="Types\Prototypes\Prototype.cs" />
+    <Compile Include="Types\Prototypes\PrototypeMember.cs" />
+    <Compile Include="Types\Prototypes\StringPrototype.cs" />
+    <Compile Include="Types\SAPIUsing.cs" />
+    <Compile Include="Types\SArray.cs" />
+    <Compile Include="Types\SBool.cs" />
+    <Compile Include="Types\SError.cs" />
+    <Compile Include="Types\SFunction.cs" />
+    <Compile Include="Types\SNull.cs" />
+    <Compile Include="Types\SNumber.cs" />
+    <Compile Include="Types\SObject.cs" />
+    <Compile Include="Types\SProtoObject.cs" />
+    <Compile Include="Types\SString.cs" />
+    <Compile Include="Types\SUndefined.cs" />
+    <Compile Include="Types\SVariable.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

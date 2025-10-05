@@ -31895,12 +31895,43 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
+<ItemGroup>
     <Folder Include="Content\Textures\Battle\Fighting\" />
   </ItemGroup>
+
+  <!-- Import Visual Basic targets -->
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
-  <Import Condition=" '$(Configuration)' != 'DebugNoContent' Or '$(Configuration)' != 'ReleaseNoContent' " Project="$(MSBuildExtensionsPath)\MonoGame\v3.0\MonoGame.Content.Builder.targets" />
+
+  <!-- Reset @(Files) to only actual files, and exclude data .dat lines -->
+  <ItemGroup>
+    <!-- Wipe anything previously placed into @(Files) -->
+    <Files Remove="@(Files)" />
+    <!-- Recreate with only real files under Content, exclude Pokemon data .dat files -->
+    <Files Include="Content\**\*.*"
+           Exclude="Content\Pokemon\Data\**\*.dat" />
+  </ItemGroup>
+
+  <!-- Import MonoGame content builder for configs that DO include content -->
+  <Import Project="$(MSBuildExtensionsPath)\MonoGame\v3.0\MonoGame.Content.Builder.targets"
+          Condition=" '$(Configuration)' != 'DebugNoContent' AND '$(Configuration)' != 'ReleaseNoContent' " />
+
+  <!-- Optional: post-build event -->
   <PropertyGroup>
     <PostBuildEvent>$(SolutionDir)lib\tools\PostBuild.exe</PostBuildEvent>
   </PropertyGroup>
+
+  <!-- Normalize line endings in text/script assets before build -->
+  <Target Name="NormalizeScripts" BeforeTargets="BeforeBuild">
+    <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\tools\Fix-LineEndings.ps1&quot;"
+          IgnoreExitCode="false" />
+  </Target>
+
+  <!-- Optional: clean cached item lists that might contain bad @(Files) entries -->
+  <Target Name="P3D_Prepare" BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <FileWrites Remove="@(FileWrites)" />
+    </ItemGroup>
+    <Delete Files="$(MSBuildProjectDirectory)\obj\$(Configuration)\P3D.vbproj.FileListAbsolute.txt"
+            ContinueOnError="true" />
+  </Target>
 </Project>

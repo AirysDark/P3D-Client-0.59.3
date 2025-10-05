@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PipelineBuildEvent xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SourceFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/miniFont.spritefont</SourceFile>
+  <SourceTime>2023-05-07T15:09:33-07:00</SourceTime>
+  <DestFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Fonts/BMP/miniFont.xnb</DestFile>
+  <DestTime>2025-10-05T00:40:51.2643603-07:00</DestTime>
+  <Importer>FontDescriptionImporter</Importer>
+  <ImporterTime>2018-12-08T08:35:54-08:00</ImporterTime>
+  <Processor>FontDescriptionProcessor</Processor>
+  <ProcessorTime>2018-12-08T08:35:54-08:00</ProcessorTime>
+  <Parameters>
+    <Key>PremultiplyAlpha</Key>
+    <Value>True</Value>
+  </Parameters>
+  <Parameters>
+    <Key>TextureFormat</Key>
+    <Value>Compressed</Value>
+  </Parameters>
+  <Dependencies />
+  <BuildAsset />
+  <BuildOutput />
+</PipelineBuildEvent>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PipelineBuildEvent xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SourceFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/chatFont.png</SourceFile>
+  <SourceTime>2023-05-07T15:09:33-07:00</SourceTime>
+  <DestFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Fonts/BMP/chatFont.xnb</DestFile>
+  <DestTime>2025-10-05T00:39:58.1924355-07:00</DestTime>
+  <Importer>LocalizedFontTextureImporter</Importer>
+  <ImporterTime>2023-05-07T15:09:33-07:00</ImporterTime>
+  <Processor>LocalizedFontTextureProcessor</Processor>
+  <ProcessorTime>2023-05-07T15:09:33-07:00</ProcessorTime>
+  <Parameters>
+    <Key>DefaultCharacter</Key>
+    <Value>?</Value>
+  </Parameters>
+  <Parameters>
+    <Key>FirstCharacter</Key>
+    <Value />
+  </Parameters>
+  <Parameters>
+    <Key>PremultiplyAlpha</Key>
+    <Value>True</Value>
+  </Parameters>
+  <Parameters>
+    <Key>TextureFormat</Key>
+    <Value>Color</Value>
+  </Parameters>
+  <Dependencies />
+  <BuildAsset />
+  <BuildOutput />
+</PipelineBuildEvent>

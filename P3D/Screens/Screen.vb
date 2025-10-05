@@ -1,4 +1,5 @@
-Imports net.Pokemon3D.Game
+''' Imports net.Pokemon3D.Game
+Imports P3D
 ''' <summary>
 ''' The base class for all screens in the game.
 ''' </summary>

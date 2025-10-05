@@ -1,0 +1,8 @@
+[submodule "lib/kolben"]
+	path = lib/kolben
+	url = https://github.com/nilllzz/kolben.git
+	branch = master
+[submodule "lib/game-dev-common"]
+	path = lib/game-dev-common
+	url = https://github.com/P3D-Legacy/Game-Dev-Common.git
+	branch = master

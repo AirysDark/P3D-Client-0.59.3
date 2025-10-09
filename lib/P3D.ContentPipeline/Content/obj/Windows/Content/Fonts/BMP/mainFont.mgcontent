@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PipelineBuildEvent xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <SourceFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/mainFont.png</SourceFile>
-  <SourceTime>2023-05-07T15:09:33-07:00</SourceTime>
-  <DestFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Fonts/BMP/mainFont.xnb</DestFile>
-  <DestTime>2025-10-05T00:40:01.3202958-07:00</DestTime>
+  <SourceFile>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/mainFont.png</SourceFile>
+  <SourceTime>2025-10-05T15:48:50.8694544+11:00</SourceTime>
+  <DestFile>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Fonts/BMP/mainFont.xnb</DestFile>
+  <DestTime>2025-10-07T19:52:41.0467994+11:00</DestTime>
   <Importer>LocalizedFontTextureImporter</Importer>
-  <ImporterTime>2023-05-07T15:09:33-07:00</ImporterTime>
+  <ImporterTime>2025-10-05T15:49:06.0424935+11:00</ImporterTime>
   <Processor>LocalizedFontTextureProcessor</Processor>
-  <ProcessorTime>2023-05-07T15:09:33-07:00</ProcessorTime>
+  <ProcessorTime>2025-10-05T15:49:06.0424935+11:00</ProcessorTime>
   <Parameters>
     <Key>DefaultCharacter</Key>
     <Value>?</Value>

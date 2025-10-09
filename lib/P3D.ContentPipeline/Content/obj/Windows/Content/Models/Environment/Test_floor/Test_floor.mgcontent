@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PipelineBuildEvent xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <SourceFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Environment/Test_floor/Test_floor.obj</SourceFile>
-  <SourceTime>2023-05-07T15:09:33-07:00</SourceTime>
-  <DestFile>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Models/Environment/Test_floor/Test_floor.xnb</DestFile>
-  <DestTime>2025-10-05T00:40:59.5720828-07:00</DestTime>
+  <SourceFile>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Environment/Test_floor/Test_floor.obj</SourceFile>
+  <SourceTime>2025-10-05T15:48:51.7392274+11:00</SourceTime>
+  <DestFile>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Models/Environment/Test_floor/Test_floor.xnb</DestFile>
+  <DestTime>2025-10-07T19:53:41.7343713+11:00</DestTime>
   <Importer>OpenAssetImporter</Importer>
-  <ImporterTime>2018-12-08T08:35:54-08:00</ImporterTime>
+  <ImporterTime>2018-12-09T03:35:54+11:00</ImporterTime>
   <Processor>ModelProcessor</Processor>
-  <ProcessorTime>2018-12-08T08:35:54-08:00</ProcessorTime>
+  <ProcessorTime>2018-12-09T03:35:54+11:00</ProcessorTime>
   <Parameters>
     <Key>ColorKeyColor</Key>
     <Value>0,0,0,0</Value>
@@ -66,7 +66,7 @@
   </Parameters>
   <Dependencies />
   <BuildAsset>
-    <string>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Models/Environment/Test_floor/Texture/floor_0.xnb</string>
+    <string>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/bin/Windows/Content/Models/Environment/Test_floor/Texture/floor_0.xnb</string>
   </BuildAsset>
   <BuildOutput />
 </PipelineBuildEvent>

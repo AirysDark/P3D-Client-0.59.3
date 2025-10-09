@@ -2,8 +2,22 @@
 Imports System.IO
 Imports System.Net
 Imports System.Security.Cryptography
+Imports System.Diagnostics
 
 Namespace GameJolt
+
+    ' ---------- helpers (OUTSIDE the class) ----------
+    Public Module VbHelpers
+        <Runtime.CompilerServices.Extension()>
+        Public Function Truthy(ByVal s As String) As Boolean
+            If s Is Nothing Then Return False
+            s = s.Trim()
+            Return String.Equals(s, "true", StringComparison.OrdinalIgnoreCase) _
+                   OrElse s = "1" _
+                   OrElse String.Equals(s, "yes", StringComparison.OrdinalIgnoreCase)
+        End Function
+    End Module
+    ' -------------------------------------------------
 
     Public Class APICall
 
@@ -17,67 +31,130 @@ Namespace GameJolt
             POST
         End Enum
 
-        Private Class APIURL
+        ' ------------------------- API BASE -------------------------
+        ' Tries to read Classified.Remote_Profile_URL (or RemoteProfileUrl). Falls back to localhost.
+        Private Shared ReadOnly Property API_BASE As String
+            Get
+                Dim url As String = TryGetRemoteProfileUrl()
+                If String.IsNullOrWhiteSpace(url) Then
+                    Return "http://127.0.0.1:8080/api/game/v1_1"
+                End If
 
-            Dim Values As New Dictionary(Of String, String)
-            Dim BaseURL As String = ""
+                Dim s = url.TrimEnd("/"c)
+                If s.EndsWith("/users", StringComparison.OrdinalIgnoreCase) Then
+                    s = s.Substring(0, s.Length - "/users".Length)
+                End If
+                Return s.TrimEnd("/"c)
+            End Get
+        End Property
+
+        Private Shared Function TryGetRemoteProfileUrl() As String
+            Try
+                Dim t = GetType(Classified)
+
+                ' FIELD: Remote_Profile_URL
+                Dim f = t.GetField("Remote_Profile_URL",
+                    Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.IgnoreCase)
+                If f IsNot Nothing Then
+                    Dim v = TryCast(f.GetValue(Nothing), String)
+                    If Not String.IsNullOrWhiteSpace(v) Then Return v
+                End If
+
+                ' PROPERTY: Remote_Profile_URL
+                Dim p = t.GetProperty("Remote_Profile_URL",
+                    Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.IgnoreCase)
+                If p IsNot Nothing Then
+                    Dim v = TryCast(p.GetValue(Nothing, Nothing), String)
+                    If Not String.IsNullOrWhiteSpace(v) Then Return v
+                End If
+
+                ' FIELD: RemoteProfileUrl
+                f = t.GetField("RemoteProfileUrl",
+                    Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.IgnoreCase)
+                If f IsNot Nothing Then
+                    Dim v = TryCast(f.GetValue(Nothing), String)
+                    If Not String.IsNullOrWhiteSpace(v) Then Return v
+                End If
+
+                ' PROPERTY: RemoteProfileUrl
+                p = t.GetProperty("RemoteProfileUrl",
+                    Reflection.BindingFlags.Public Or Reflection.BindingFlags.Static Or Reflection.BindingFlags.IgnoreCase)
+                If p IsNot Nothing Then
+                    Dim v = TryCast(p.GetValue(Nothing, Nothing), String)
+                    If Not String.IsNullOrWhiteSpace(v) Then Return v
+                End If
+            Catch
+                ' ignore and fall back
+            End Try
+
+            Return Nothing
+        End Function
+        ' -----------------------------------------------------------
+
+        ' ------------------------- APIURL -------------------------
+        Private Class APIURL
+            Private ReadOnly _pairs As New List(Of KeyValuePair(Of String, String))()
+            Private _basePath As String = ""
 
             Public Sub New(ByVal baseURL As String)
-                Me.BaseURL = baseURL
-
-                If Me.BaseURL.StartsWith("/") = False Then
-                    Me.BaseURL = "/" & baseURL
-                End If
-                If Me.BaseURL.EndsWith("/") = False Then
-                    Me.BaseURL &= "/"
-                End If
+                _basePath = If(String.IsNullOrWhiteSpace(baseURL), "/", baseURL)
+                If Not _basePath.StartsWith("/") Then _basePath = "/" & _basePath
             End Sub
 
             Public Sub AddKeyValuePair(ByVal Key As String, ByVal Value As String)
-                Me.Values.Add(Key, Value)
+                _pairs.Add(New KeyValuePair(Of String, String)(Key, Value))
             End Sub
 
-            Public ReadOnly Property GetURL() As String
+            Public ReadOnly Property GetURL As String
                 Get
-                    Dim url As String = HOST & API.API_VERSION & Me.BaseURL
+                    Dim sb As New StringBuilder()
+                    sb.Append(API_BASE).Append(_basePath)
 
-                    For i = 0 To Me.Values.Count - 1
-                        Dim appendString As String = ""
-                        If i = 0 Then
-                            appendString &= "?"
-                        Else
-                            appendString &= "&"
-                        End If
-                        appendString &= Me.Values.Keys(i) & "="
+                    If _pairs.Count > 0 Then
+                        sb.Append("?"c)
+                        For i = 0 To _pairs.Count - 1
+                            If i > 0 Then sb.Append("&"c)
+                            sb.Append(_pairs(i).Key).
+                               Append("="c).
+                               Append(UrlEncoder.Encode(_pairs(i).Value))
+                        Next
+                    End If
 
-                        appendString &= UrlEncoder.Encode(Me.Values.Values(i))
-
-                        url &= appendString
-                    Next
-
-                    Return url
+                    Return sb.ToString()
                 End Get
             End Property
-
         End Class
+        ' ----------------------------------------------------------
 
         Public Delegate Sub DelegateCallSub(ByVal result As String)
-
         Public CallSub As DelegateCallSub
 
-        Dim username As String
-        Dim token As String
+        Private username As String
+        Private token As String
+        Private loggedIn As Boolean
 
-        Dim loggedIn As Boolean
+        Private Shared ReadOnly CONST_GAMEID As String = Classified.GameJolt_Game_ID
+        Private Shared ReadOnly CONST_GAMEKEY As String = Classified.GameJolt_Game_Key
 
-        Const CONST_GAMEID As String = Classified.GameJolt_Game_ID
-        Const CONST_GAMEKEY As String = Classified.GameJolt_Game_Key
-        Const HOST As String = "http://api.gamejolt.com/api/game/"
-
-        Dim Exception As System.Exception = Nothing
+        Private exThrown As System.Exception = Nothing
 
         Public Event CallFails(ByVal ex As Exception)
         Public Event CallSucceeded(ByVal returnData As String)
+
+        ' --------- logging wrappers ----------
+        Private Shared Sub TraceInfo(msg As String)
+            Try : ClientTrace.LogInfo(msg) : Catch : Debug.WriteLine("[INFO] " & msg) : End Try
+        End Sub
+        Private Shared Sub TraceWarn(msg As String)
+            Try : ClientTrace.LogWarn(msg) : Catch : Debug.WriteLine("[WARN] " & msg) : End Try
+        End Sub
+        Private Shared Sub TraceError(msg As String)
+            Try : ClientTrace.LogError(msg) : Catch : Debug.WriteLine("[ERROR] " & msg) : End Try
+        End Sub
+        Private Shared Sub TraceDebug(msg As String)
+            Try : ClientTrace.LogDebug(msg) : Catch : Debug.WriteLine("[DEBUG] " & msg) : End Try
+        End Sub
+        ' ------------------------------------
 
         Private ReadOnly Property GameID() As String
             Get
@@ -91,92 +168,105 @@ Namespace GameJolt
             End Get
         End Property
 
+        ' ===== token vs password mode =====
+        Private Enum CredentialKind
+            Token
+            Password
+        End Enum
+        Private _credKind As CredentialKind = CredentialKind.Token
+
+        Public Sub UseTokenAuth()
+            _credKind = CredentialKind.Token
+        End Sub
+
+        Public Sub UsePasswordAuth()
+            _credKind = CredentialKind.Password
+        End Sub
+
+        Private Function CredParamName() As String
+            Return If(_credKind = CredentialKind.Password, "password", "user_token")
+        End Function
+
+        Private Sub AddAuth(u As APIURL, Optional requireLogin As Boolean = True)
+            If requireLogin AndAlso Not loggedIn Then
+                Throw New Exception("User not logged in!")
+            End If
+            u.AddKeyValuePair("username", If(username, String.Empty))
+            u.AddKeyValuePair(CredParamName(), If(token, String.Empty))
+        End Sub
+        ' ===================================
+
         Public Sub New(ByVal CallSub As DelegateCallSub)
             Me.CallSub = CallSub
-
             Me.username = API.username
             Me.token = API.token
-
             Me.loggedIn = API.LoggedIn
         End Sub
 
         Public Sub New()
             Me.username = API.username
             Me.token = API.token
-
             Me.loggedIn = API.LoggedIn
         End Sub
 
-        Public Sub VerifyUser(ByVal newUsername As String, ByVal newToken As String)
+        Public Sub SetCredentials(newUsername As String, newSecret As String, Optional isLoggedIn As Boolean = True)
             API.username = newUsername
-            API.token = newToken
-            username = newUsername
-            token = newToken
+            API.token = newSecret
+            Me.username = newUsername
+            Me.token = newSecret
+            Me.loggedIn = isLoggedIn
+        End Sub
 
-            Dim url As New APIURL("/users/auth/")
+        ' ------------------------- AUTH -------------------------
+        Public Sub VerifyUser(ByVal newUsername As String, ByVal newSecret As String)
+            SetCredentials(If(newUsername, "").Trim(), If(newSecret, "").Trim(), False)
+
+            Dim url As New APIURL("/users/auth")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+            AddAuth(url, requireLogin:=False)
 
+            TraceInfo($"LOGIN attempt user=""{username}"" mode={_credKind}")
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
 #Region "Storage"
 
         Public Sub SetStorageData(ByVal key As String, ByVal data As String, ByVal useUsername As Boolean)
-            If useUsername = True Then
-                If loggedIn = False Then
-                    Dim up As New Exception("User not logged in!") 'Happens when a user tries to send an API call but is not logged in.
-
-                    Throw up
-                Else
-                    Dim url As New APIURL("/data-store/set/")
-                    url.AddKeyValuePair("game_id", GameID)
-                    url.AddKeyValuePair("username", username)
-                    url.AddKeyValuePair("user_token", token)
-                    url.AddKeyValuePair("key", key)
-
-                    Initialize(url.GetURL(), RequestMethod.POST, data)
-                End If
+            If useUsername Then
+                Dim url As New APIURL("/data-store/set")
+                url.AddKeyValuePair("game_id", GameID)
+                AddAuth(url)
+                url.AddKeyValuePair("key", key)
+                Initialize(url.GetURL(), RequestMethod.POST, data)
             Else
-                Dim url As New APIURL("/data-store/set/")
+                Dim url As New APIURL("/data-store/set")
                 url.AddKeyValuePair("game_id", GameID)
                 url.AddKeyValuePair("key", key)
-
                 Initialize(url.GetURL(), RequestMethod.POST, data)
             End If
         End Sub
 
         Public Sub UpdateStorageData(ByVal key As String, ByVal value As String, ByVal operation As String, ByVal useUsername As Boolean)
-            If useUsername = True Then
-                If loggedIn = False Then
-                    Dim up As New Exception("User not logged in!") 'Happens when a user tries to send an API call but is not logged in.
-
-                    Throw up
-                Else
-                    Dim url As New APIURL("/data-store/update/")
-                    url.AddKeyValuePair("game_id", GameID)
-                    url.AddKeyValuePair("username", username)
-                    url.AddKeyValuePair("user_token", token)
-                    url.AddKeyValuePair("key", key)
-                    url.AddKeyValuePair("operation", operation)
-                    url.AddKeyValuePair("value", value)
-
-                    Initialize(url.GetURL(), RequestMethod.GET)
-                End If
+            If useUsername Then
+                Dim url As New APIURL("/data-store/update")
+                url.AddKeyValuePair("game_id", GameID)
+                AddAuth(url)
+                url.AddKeyValuePair("key", key)
+                url.AddKeyValuePair("operation", operation)
+                url.AddKeyValuePair("value", value)
+                Initialize(url.GetURL(), RequestMethod.GET)
             Else
-                Dim url As New APIURL("/data-store/update/")
+                Dim url As New APIURL("/data-store/update")
                 url.AddKeyValuePair("game_id", GameID)
                 url.AddKeyValuePair("key", key)
                 url.AddKeyValuePair("operation", operation)
                 url.AddKeyValuePair("value", value)
-
                 Initialize(url.GetURL(), RequestMethod.GET)
             End If
         End Sub
 
         Public Sub SetStorageData(ByVal keys() As String, ByVal dataItems() As String, ByVal useUsernames() As Boolean)
-            If keys.Length <> dataItems.Length Or keys.Length <> useUsernames.Length Then
+            If keys.Length <> dataItems.Length OrElse keys.Length <> useUsernames.Length Then
                 Dim ex As New Exception("The data arrays do not have the same lengths.")
                 ex.Data.Add("Keys Length", keys.Length)
                 ex.Data.Add("Data Length", dataItems.Length)
@@ -184,204 +274,151 @@ Namespace GameJolt
                 Throw ex
             End If
 
-            Dim url As String = HOST & API.API_VERSION & "/batch/" & "?game_id=" & GameID & "&parallel=true"
-            Dim postDataURL As String = ""
+            Dim url As String = API_BASE & "/batch?game_id=" & GameID & "&parallel=true"
+            Dim postDataURL As New StringBuilder()
 
             For i = 0 To keys.Length - 1
-                Dim key As String = keys(i)
+                Dim k As String = keys(i)
                 Dim data As String = dataItems(i)
                 Dim useUsername As Boolean = useUsernames(i)
 
-                If useUsername = True And loggedIn = False Then
-                    Throw New Exception("User not logged in!")
+                Dim authPart As String = ""
+                If useUsername Then
+                    authPart = "&username=" & UrlEncoder.Encode(username) &
+                               "&" & CredParamName() & "=" & UrlEncoder.Encode(token)
                 End If
 
-                If useUsername = True Then
-                    postDataURL &= "&requests[]=" & UrlEncoder.Encode(GetHashedURL("/data-store/set/" & "?game_id=" & GameID & "&username=" & username & "&user_token=" & token & "&key=" & UrlEncoder.Encode(key) & "&data=" & UrlEncoder.Encode(data)))
-                Else
-                    postDataURL &= "&requests[]=" & UrlEncoder.Encode(GetHashedURL("/data-store/set/" & "?game_id=" & GameID & "&key=" & UrlEncoder.Encode(key) & "&data=" & UrlEncoder.Encode(data)))
-                End If
+                postDataURL.Append("&requests[]=").Append(UrlEncoder.Encode(
+                    GetHashedURL("/data-store/set" &
+                                 "?game_id=" & GameID &
+                                 authPart &
+                                 "&key=" & UrlEncoder.Encode(k) &
+                                 "&data=" & UrlEncoder.Encode(data))))
             Next
 
-            Initialize(url, RequestMethod.POST, postDataURL)
+            Initialize(url, RequestMethod.POST, postDataURL.ToString())
         End Sub
 
         Public Sub SetStorageDataRestricted(ByVal key As String, ByVal data As String)
-            Dim url As String = HOST & API.API_VERSION & "/data-store/set/" & "?game_id=" & GameID & "&key=" & key & "&restriction_username=" & API.username & "&restriction_user_token=" & API.token
-
+            Dim url As String = API_BASE & "/data-store/set" &
+                                "?game_id=" & GameID & "&key=" & UrlEncoder.Encode(key) &
+                                "&restriction_username=" & UrlEncoder.Encode(API.username) &
+                                "&restriction_user_token=" & UrlEncoder.Encode(API.token)
             Initialize(url, RequestMethod.POST, data)
         End Sub
 
         Public Sub GetStorageData(ByVal key As String, ByVal useUsername As Boolean)
-            If useUsername = True Then
-                If loggedIn = False Then
-                    Throw New Exception("User not logged in!")
-                Else
-                    Dim url As New APIURL("/data-store/")
-                    url.AddKeyValuePair("game_id", GameID)
-                    url.AddKeyValuePair("username", username)
-                    url.AddKeyValuePair("user_token", token)
-                    url.AddKeyValuePair("key", key)
-
-                    Initialize(url.GetURL(), RequestMethod.GET)
-                End If
+            If useUsername Then
+                Dim url As New APIURL("/data-store/get")
+                url.AddKeyValuePair("game_id", GameID)
+                AddAuth(url)
+                url.AddKeyValuePair("key", key)
+                Initialize(url.GetURL(), RequestMethod.GET)
             Else
-                Dim url As New APIURL("/data-store/")
+                Dim url As New APIURL("/data-store/get")
                 url.AddKeyValuePair("game_id", GameID)
                 url.AddKeyValuePair("key", key)
-
                 Initialize(url.GetURL(), RequestMethod.GET)
             End If
         End Sub
 
         Public Sub GetStorageData(ByVal keys() As String, ByVal useUsername As Boolean)
-            If useUsername = True Then
-                If loggedIn = False Then
-                    Throw New Exception("User not logged in!")
-                Else
-                    Dim url As String = HOST & API.API_VERSION & "/batch/"
-
-                    Dim firstURL As Boolean = True
-
-                    For Each key As String In keys
-                        Dim keyURL As String = "?"
-                        If firstURL = False Then
-                            keyURL = "&"
-                        End If
-
-                        keyURL &= "requests[]=" & UrlEncoder.Encode(GetHashedURL(HOST & API.API_VERSION & "/data-store/" & "?game_id=" & GameID & "&username=" & username & "&user_token=" & token & "&key=" & key))
-
-                        url &= keyURL
-
-                        firstURL = False
-                    Next
-
-                    url &= "&game_id=" & GameID
-
-                    Initialize(url, RequestMethod.GET)
+            Dim url As New StringBuilder(API_BASE & "/batch")
+            Dim first As Boolean = True
+            For Each k As String In keys
+                Dim sep = If(first, "?", "&")
+                Dim authPart As String = ""
+                If useUsername Then
+                    authPart = "&username=" & UrlEncoder.Encode(username) &
+                               "&" & CredParamName() & "=" & UrlEncoder.Encode(token)
                 End If
-            Else
-                Dim url As String = HOST & API.API_VERSION & "/batch/"
-
-                Dim firstURL As Boolean = True
-
-                For Each key As String In keys
-                    Dim keyURL As String = "?"
-                    If firstURL = False Then
-                        keyURL = "&"
-                    End If
-
-                    keyURL &= "requests[]=" & UrlEncoder.Encode(GetHashedURL(HOST & API.API_VERSION & "/data-store/" & "?game_id=" & GameID & "&key=" & key))
-
-                    url &= keyURL
-
-                    firstURL = False
-                Next
-
-                url &= "&game_id=" & GameID
-
-                Initialize(url, RequestMethod.GET)
-            End If
+                url.Append(sep).Append("requests[]=").Append(UrlEncoder.Encode(
+                    GetHashedURL("/data-store/get" &
+                                 "?game_id=" & GameID &
+                                 authPart &
+                                 "&key=" & UrlEncoder.Encode(k))))
+                first = False
+            Next
+            url.Append("&game_id=").Append(GameID)
+            Initialize(url.ToString(), RequestMethod.GET)
         End Sub
 
         Public Sub FetchUserdata(ByVal username As String)
-            Dim url As New APIURL("/users/")
+            Dim url As New APIURL("/users")
             url.AddKeyValuePair("game_id", GameID)
             url.AddKeyValuePair("username", username)
-
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub FetchUserdataByID(ByVal user_id As String)
-            Dim url As New APIURL("/users/")
+            Dim url As New APIURL("/users")
             url.AddKeyValuePair("game_id", GameID)
             url.AddKeyValuePair("user_id", user_id)
-
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub GetKeys(ByVal useUsername As Boolean, ByVal pattern As String)
-            If useUsername = True Then
-                If loggedIn = False Then
-                    Throw New Exception("User not logged in!")
-                Else
-                    Dim url As New APIURL("/data-store/get-keys/")
-                    url.AddKeyValuePair("game_id", GameID)
-                    url.AddKeyValuePair("username", username)
-                    url.AddKeyValuePair("user_token", token)
-                    url.AddKeyValuePair("pattern", pattern)
-
-                    Initialize(url.GetURL(), RequestMethod.GET)
-                End If
-            Else
-                Dim url As New APIURL("/data-store/get-keys/")
-                url.AddKeyValuePair("game_id", GameID)
-                url.AddKeyValuePair("pattern", pattern)
-
-                Initialize(url.GetURL(), RequestMethod.GET)
-            End If
+            Dim url As New APIURL("/data-store/get-keys")
+            url.AddKeyValuePair("game_id", GameID)
+            If useUsername Then AddAuth(url)
+            If Not String.IsNullOrWhiteSpace(pattern) Then url.AddKeyValuePair("pattern", pattern)
+            Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub RemoveKey(ByVal key As String, ByVal useUsername As Boolean)
-            If useUsername = True Then
-                If loggedIn = False Then
-                    Throw New Exception("User Not logged in!")
-                Else
-                    Dim url As New APIURL("/data-store/remove/")
-                    url.AddKeyValuePair("game_id", GameID)
-                    url.AddKeyValuePair("username", username)
-                    url.AddKeyValuePair("user_token", token)
-                    url.AddKeyValuePair("key", key)
+            If String.IsNullOrWhiteSpace(key) Then Throw New Exception("Key is required")
 
-                    Initialize(url.GetURL(), RequestMethod.POST)
-                End If
-            Else
-                Dim url As New APIURL("/data-store/remove/")
-                url.AddKeyValuePair("game_id", GameID)
-                url.AddKeyValuePair("key", key)
-
-                Initialize(url.GetURL(), RequestMethod.POST)
-            End If
+            Dim url As New APIURL("/data-store/remove")
+            url.AddKeyValuePair("game_id", GameID)
+            If useUsername Then AddAuth(url)
+            url.AddKeyValuePair("key", key)
+            Initialize(url.GetURL(), RequestMethod.POST)
         End Sub
 
 #End Region
 
 #Region "Sessions"
 
-        Public Sub OpenSession()
-            Dim url As New APIURL("/sessions/open/")
-            url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+        ' Replace in APICall.OpenSession()
+        Private Shared _sessionIsOpen As Boolean = False
+        Private Shared _lastOpenTick As Integer = 0
 
+        Public Sub OpenSession()
+            ' Use Environment.TickCount instead of TickCount64 for older .NET
+            Dim nowTick As Integer = Environment.TickCount
+            If _sessionIsOpen AndAlso Math.Abs(nowTick - _lastOpenTick) < 2000 Then
+                TraceDebug("OpenSession() suppressed (already open).")
+                Return
+            End If
+
+            Dim url As New APIURL("/sessions/open")
+            url.AddKeyValuePair("game_id", GameID)
+            AddAuth(url)
             Initialize(url.GetURL(), RequestMethod.GET)
+
+            _sessionIsOpen = True
+            _lastOpenTick = nowTick
         End Sub
 
+        ' Keep sessions alive without relying on /sessions/ping
         Public Sub CheckSession()
-            Dim url As New APIURL("/sessions/ping/")
-            url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
-
-            Initialize(url.GetURL(), RequestMethod.GET)
+            ' /sessions/open is idempotent on most servers; use it as a keepalive
+            OpenSession()
         End Sub
 
         Public Sub PingSession()
-            Dim url As New APIURL("/sessions/ping/")
+            Dim url As New APIURL("/sessions/ping")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
-
+            AddAuth(url)
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub CloseSession()
-            Dim url As New APIURL("/sessions/close/")
+            Dim url As New APIURL("/sessions/close")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
-
+            AddAuth(url)
             Initialize(url.GetURL(), RequestMethod.GET)
+            _sessionIsOpen = False
         End Sub
 
 #End Region
@@ -389,51 +426,41 @@ Namespace GameJolt
 #Region "Trophy"
 
         Public Sub FetchAllTrophies()
-            Dim url As New APIURL("/trophies/")
+            Dim url As New APIURL("/trophies")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
-
+            AddAuth(url)
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub FetchAllAchievedTrophies()
-            Dim url As New APIURL("/trophies/")
+            Dim url As New APIURL("/trophies")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+            AddAuth(url)
             url.AddKeyValuePair("achieved", "true")
-
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub FetchTrophy(ByVal trophy_id As Integer)
-            Dim url As New APIURL("/trophies/")
+            Dim url As New APIURL("/trophies")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+            AddAuth(url)
             url.AddKeyValuePair("trophy_id", trophy_id.ToString())
-
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub TrophyAchieved(ByVal trophy_id As Integer)
-            Dim url As New APIURL("/trophies/add-achieved/")
+            Dim url As New APIURL("/trophies/add-achieved")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+            AddAuth(url)
             url.AddKeyValuePair("trophy_id", trophy_id.ToString())
-
             Initialize(url.GetURL(), RequestMethod.POST)
         End Sub
 
         Public Sub RemoveTrophyAchieved(ByVal trophy_id As Integer)
-            Dim url As New APIURL("/trophies/remove-achieved/")
+            Dim url As New APIURL("/trophies/remove-achieved")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+            AddAuth(url)
             url.AddKeyValuePair("trophy_id", trophy_id.ToString())
-
             Initialize(url.GetURL(), RequestMethod.POST)
         End Sub
 
@@ -442,32 +469,28 @@ Namespace GameJolt
 #Region "ScoreTable"
 
         Public Sub FetchTable(ByVal score_count As Integer, ByVal table_id As String)
-            Dim url As New APIURL("/scores/")
+            Dim url As New APIURL("/scores")
             url.AddKeyValuePair("game_id", GameID)
             url.AddKeyValuePair("limit", score_count.ToString())
             url.AddKeyValuePair("table_id", table_id)
-
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub FetchUserRank(ByVal table_id As String, ByVal sort As Integer)
-            Dim url As New APIURL("/scores/get-rank/")
+            Dim url As New APIURL("/scores/get-rank")
             url.AddKeyValuePair("game_id", GameID)
             url.AddKeyValuePair("sort", sort.ToString())
             url.AddKeyValuePair("table_id", table_id)
-
             Initialize(url.GetURL(), RequestMethod.GET)
         End Sub
 
         Public Sub AddScore(ByVal score As String, ByVal sort As Integer, ByVal table_id As String)
-            Dim url As New APIURL("/scores/add/")
+            Dim url As New APIURL("/scores/add")
             url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+            AddAuth(url)
             url.AddKeyValuePair("score", score)
             url.AddKeyValuePair("sort", sort.ToString())
             url.AddKeyValuePair("table_id", table_id)
-
             Initialize(url.GetURL(), RequestMethod.POST)
         End Sub
 
@@ -475,42 +498,89 @@ Namespace GameJolt
 
 #Region "Friends"
 
-        Public Sub FetchFriendList(ByVal user_id As String)
-            Dim url As New APIURL("/friends/")
-            url.AddKeyValuePair("game_id", GameID)
-            url.AddKeyValuePair("username", username)
-            url.AddKeyValuePair("user_token", token)
+        Public Sub FetchFriendList()
+            Try
+                Dim url As New APIURL("/friends")
+                url.AddKeyValuePair("game_id", GameID)
+                AddAuth(url)
+                TraceInfo("Friends: GET " & url.GetURL())
+                Initialize(url.GetURL(), RequestMethod.GET)
+            Catch ex As Exception
+                TraceError("FetchFriendList(): " & ex.Message)
+            End Try
+        End Sub
 
-            Initialize(url.GetURL(), RequestMethod.GET)
+        Public Sub FetchFriendList(ByVal user_id As String)
+            Try
+                Dim url As New APIURL("/friends")
+                url.AddKeyValuePair("game_id", GameID)
+                AddAuth(url)
+                url.AddKeyValuePair("user_id", user_id)
+                TraceInfo("Friends: GET " & url.GetURL())
+                Initialize(url.GetURL(), RequestMethod.GET)
+            Catch ex As Exception
+                TraceError("FetchFriendList(user_id): " & ex.Message)
+            End Try
+        End Sub
+
+        Public Sub AddFriend(ByVal friend_username As String)
+            Try
+                Dim url As New APIURL("/friends/add")
+                url.AddKeyValuePair("game_id", GameID)
+                AddAuth(url)
+                url.AddKeyValuePair("friend_username", friend_username)
+                TraceInfo("Friends: POST " & url.GetURL())
+                Initialize(url.GetURL(), RequestMethod.POST)
+            Catch ex As Exception
+                TraceError("AddFriend(): " & ex.Message)
+            End Try
+        End Sub
+
+        Public Sub RemoveFriend(ByVal friend_username As String)
+            Try
+                Dim url As New APIURL("/friends/remove")
+                url.AddKeyValuePair("game_id", GameID)
+                AddAuth(url)
+                url.AddKeyValuePair("friend_username", friend_username)
+                TraceInfo("Friends: POST " & url.GetURL())
+                Initialize(url.GetURL(), RequestMethod.POST)
+            Catch ex As Exception
+                TraceError("RemoveFriend(): " & ex.Message)
+            End Try
         End Sub
 
 #End Region
 
+        ' --- fields for current request ---
         Private url As String = ""
         Private PostData As String = ""
 
-        Private Function GetHashedURL(ByVal url As String) As String
-            Dim m As MD5 = MD5.Create()
+        Private Function GetHashedURL(ByVal pathOrUrl As String) As String
+            Dim full As String
+            If pathOrUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
+                full = pathOrUrl
+            Else
+                If Not pathOrUrl.StartsWith("/") Then pathOrUrl = "/" & pathOrUrl
+                full = API_BASE & pathOrUrl
+            End If
 
-            Dim data() As Byte = m.ComputeHash(Encoding.UTF8.GetBytes(url & GameKey))
-
-            Dim sBuild As New StringBuilder()
-
-            For i = 0 To data.Length - 1
-                sBuild.Append(data(i).ToString("x2"))
-            Next
-
-            Dim newurl As String = url & "&signature=" & sBuild.ToString()
-
-            Return newurl
+            Using m As MD5 = MD5.Create()
+                Dim data() As Byte = m.ComputeHash(Encoding.UTF8.GetBytes(full & GameKey))
+                Dim sb As New StringBuilder(data.Length * 2)
+                For i = 0 To data.Length - 1
+                    sb.Append(data(i).ToString("x2"))
+                Next
+                Return full & If(full.Contains("?"), "&", "?") & "signature=" & sb.ToString()
+            End Using
         End Function
 
         Private Sub Initialize(ByVal url As String, ByVal method As RequestMethod, Optional ByVal PostData As String = "")
-            Exception = Nothing
+            exThrown = Nothing
 
-            Dim newurl As String = GetHashedURL(url & "&format=keypair")
+            Dim formatted As String = If(url.Contains("?"), url & "&format=keypair", url & "?format=keypair")
+            Dim newurl As String = GetHashedURL(formatted)
 
-            Debug.Print(newurl) 'Intentional
+            TraceDebug("INIT " & method.ToString() & " " & newurl)
 
             If method = RequestMethod.POST Then
                 Me.url = newurl
@@ -522,11 +592,19 @@ Namespace GameJolt
             Else
                 Try
                     Dim request As HttpWebRequest = CType(WebRequest.Create(newurl), HttpWebRequest)
-                    request.Method = method.ToString()
+                    request.Method = "GET"
+                    request.KeepAlive = False
+                    request.Proxy = Nothing
+                    request.ServicePoint.Expect100Continue = False
+                    request.Timeout = 8000
+                    request.ReadWriteTimeout = 8000
+                    request.UserAgent = "P3D-Client/0.59.3"
 
+                    TraceInfo($"API REQUEST -> GET {newurl}")
                     request.BeginGetResponse(AddressOf EndResult, request)
                 Catch ex As Exception
                     API.APICallCount -= 1
+                    TraceError($"API EXCEPTION (Begin GET) {ex.GetType().Name}: {ex.Message} url={newurl}")
                     RaiseEvent CallFails(ex)
                 End Try
             End If
@@ -540,29 +618,72 @@ Namespace GameJolt
 
             Try
                 Dim request As HttpWebRequest = CType(WebRequest.Create(url), HttpWebRequest)
-                request.AllowWriteStreamBuffering = True
                 request.Method = "POST"
-                Dim post As String = "data=" & PostData
-                request.ContentLength = post.Length
-                request.ContentType = "application/x-www-form-urlencoded"
+                request.KeepAlive = False
+                request.Proxy = Nothing
                 request.ServicePoint.Expect100Continue = False
+                request.AllowWriteStreamBuffering = True
+                request.Timeout = 8000
+                request.ReadWriteTimeout = 8000
+                request.UserAgent = "P3D-Client/0.59.3"
 
-                Dim writer As StreamWriterLock = New StreamWriterLock(request.GetRequestStream())
-                writer.Write(post)
-                writer.Close()
-                Dim response As HttpWebResponse = CType(request.GetResponse(), HttpWebResponse)
+                Dim bodyBytes() As Byte
+                If String.IsNullOrEmpty(PostData) Then
+                    bodyBytes = Array.Empty(Of Byte)()
+                    request.ContentType = "application/x-www-form-urlencoded"
+                Else
+                    Dim body As String = "data=" & UrlEncoder.Encode(PostData)
+                    bodyBytes = Encoding.UTF8.GetBytes(body)
+                    request.ContentType = "application/x-www-form-urlencoded"
+                End If
 
-                gotData = New StreamReader(response.GetResponseStream()).ReadToEnd()
+                request.ContentLength = bodyBytes.Length
+                TraceInfo($"API REQUEST -> POST {url} bodyLen={bodyBytes.Length}")
+
+                If bodyBytes.Length > 0 Then
+                    Using reqStream = request.GetRequestStream()
+                        reqStream.Write(bodyBytes, 0, bodyBytes.Length)
+                    End Using
+                End If
+
+                Using response As HttpWebResponse = CType(request.GetResponse(), HttpWebResponse)
+                    Using rs = response.GetResponseStream()
+                        Using sr As New StreamReader(rs, Encoding.UTF8)
+                            gotData = sr.ReadToEnd()
+                        End Using
+                    End Using
+                    TraceInfo($"API RESPONSE <- {CInt(response.StatusCode)} len={gotData.Length} url={url}")
+                End Using
+
                 gotDataSuccess = True
+            Catch ex As WebException
+                Try
+                    Dim statusCode As String = "?"
+                    Dim payload As String = ""
+                    If ex.Response IsNot Nothing Then
+                        Dim resp = CType(ex.Response, HttpWebResponse)
+                        statusCode = CInt(resp.StatusCode).ToString()
+                        Using rs = resp.GetResponseStream()
+                            Using sr As New StreamReader(rs, Encoding.UTF8)
+                                payload = sr.ReadToEnd()
+                            End Using
+                        End Using
+                    End If
+                    TraceError($"API EXCEPTION (POST) WebException status={statusCode} url={url} payloadLen={payload.Length}")
+                    RaiseEvent CallFails(New Exception($"HTTP {statusCode}: {payload}"))
+                Catch
+                    TraceError($"API EXCEPTION (POST) {ex.GetType().Name}: {ex.Message} url={url}")
+                    RaiseEvent CallFails(ex)
+                End Try
             Catch ex As Exception
+                TraceError($"API EXCEPTION (POST) {ex.GetType().Name}: {ex.Message} url={url}")
                 RaiseEvent CallFails(ex)
             Finally
                 API.APICallCount -= 1
             End Try
 
-            'Handle data outside of the try...catch because the result function could throw an error:
-            If gotDataSuccess = True Then
-                If Not CallSub Is Nothing Then
+            If gotDataSuccess Then
+                If CallSub IsNot Nothing Then
                     CallSub(gotData)
                     RaiseEvent CallSucceeded(gotData)
                 End If
@@ -575,23 +696,57 @@ Namespace GameJolt
             Try
                 If result.IsCompleted Then
                     Dim request As HttpWebRequest = CType(result.AsyncState, HttpWebRequest)
-
-                    data = New StreamReader(request.EndGetResponse(result).GetResponseStream()).ReadToEnd()
+                    Using response As HttpWebResponse = CType(request.EndGetResponse(result), HttpWebResponse)
+                        Using rs = response.GetResponseStream()
+                            Using sr As New StreamReader(rs, Encoding.UTF8)
+                                data = sr.ReadToEnd()
+                                TraceDebug("BODY (first 300): " & If(data, "").Substring(0, Math.Min(300, If(data, "").Length)))
+                            End Using
+                        End Using
+                        TraceInfo($"API RESPONSE <- {CInt(response.StatusCode)} len={data.Length} url={request.Address}")
+                    End Using
                 End If
+            Catch ex As WebException
+                Try
+                    Dim statusCode As String = "?"
+                    Dim payload As String = ""
+                    If ex.Response IsNot Nothing Then
+                        Dim resp = CType(ex.Response, HttpWebResponse)
+                        statusCode = CInt(resp.StatusCode).ToString()
+                        Using rs = resp.GetResponseStream()
+                            Using sr As New StreamReader(rs, Encoding.UTF8)
+                                payload = sr.ReadToEnd()
+                            End Using
+                        End Using
+                    End If
+                    Dim req = TryCast(result.AsyncState, HttpWebRequest)
+                    TraceError($"API EXCEPTION (GET) WebException status={statusCode} url={If(req IsNot Nothing, req.Address.ToString(), "?")} payloadLen={payload.Length}")
+                    RaiseEvent CallFails(New Exception($"HTTP {statusCode}: {payload}"))
+                Catch
+                    TraceError($"API EXCEPTION (GET) {ex.GetType().Name}: {ex.Message}")
+                    RaiseEvent CallFails(ex)
+                End Try
             Catch ex As Exception
+                TraceError($"API EXCEPTION (GET) {ex.GetType().Name}: {ex.Message}")
                 RaiseEvent CallFails(ex)
             Finally
                 API.APICallCount -= 1
             End Try
 
-            'Handle data outside of the try...catch because the result function could throw an error:
-            If data <> "" Then
-                If Not CallSub Is Nothing Then
-                    RaiseEvent CallSucceeded(data)
-                    CallSub(data)
-                End If
+            If data <> "" AndAlso CallSub IsNot Nothing Then
+                RaiseEvent CallSucceeded(data)
+                CallSub(data)
             End If
         End Sub
+
+        ' ----------------- Minimal URL encoder fallback -----------------
+        Private NotInheritable Class UrlEncoder
+            Private Sub New()
+            End Sub
+            Public Shared Function Encode(s As String) As String
+                Return Uri.EscapeDataString(If(s, ""))
+            End Function
+        End Class
 
     End Class
 

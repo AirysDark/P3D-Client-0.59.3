@@ -4,31 +4,31 @@
   <Platform>Windows</Platform>
   <Config />
   <SourceFiles>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Effects/BackdropShader.fx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Effects/GaussianBlur.fx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/Braille.png</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/chatFont.png</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/InGame.png</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/mainFont.png</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/miniFont.spritefont</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/TextFont.png</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Fonts/BMP/Unown.png</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/BattlePike/BattlePike.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/boat/ferry.obj</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/boat/SSAqua.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/boat2/Boat.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/building/KolbenTower.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Environment/arena_colleseum.obj</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Environment/MtSilver/Mountain.obj</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Environment/Test_floor/Test_floor.obj</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Pokemon/Snorlax/Normal.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Pokemon/Snorlax/Shiny.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/SeaPlane/SeaPlane.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/SeaPlane/SeaPlane_Propeller.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Snorlax/Normal.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/Snorlax/Shiny.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/Models/truck2/Truck.fbx</File>
-    <File>C:/p3d/P3D-Client-0.59.3/lib/P3D.ContentPipeline/Content/SkyDomeResource/SkyDome.obj</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Effects/BackdropShader.fx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Effects/GaussianBlur.fx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/Braille.png</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/chatFont.png</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/InGame.png</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/mainFont.png</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/miniFont.spritefont</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/TextFont.png</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Fonts/BMP/Unown.png</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/BattlePike/BattlePike.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/boat/ferry.obj</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/boat/SSAqua.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/boat2/Boat.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/building/KolbenTower.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Environment/arena_colleseum.obj</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Environment/MtSilver/Mountain.obj</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Environment/Test_floor/Test_floor.obj</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Pokemon/Snorlax/Normal.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Pokemon/Snorlax/Shiny.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/SeaPlane/SeaPlane.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/SeaPlane/SeaPlane_Propeller.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Snorlax/Normal.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/Snorlax/Shiny.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/Models/truck2/Truck.fbx</File>
+    <File>C:/p3d/P3D-Client-0.59.3-online/lib/P3D.ContentPipeline/Content/SkyDomeResource/SkyDome.obj</File>
   </SourceFiles>
   <DestFiles>
     <File xsi:nil="true" />
